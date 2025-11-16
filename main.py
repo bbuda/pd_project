@@ -45,6 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
     vacancy.add_argument("--text", help="Текст вакансии")
     vacancy.add_argument("--file", help="Файл с описанием вакансии")
 
+    chat = subparsers.add_parser("chat", help="Чат с ассистентом (поддерживает PDF)")
+    chat.add_argument("--message", help="Сообщение для одноразового ответа")
+    chat.add_argument("--pdf", action="append", help="Прикрепить PDF документ к чату")
+
     return parser
 
 
@@ -63,6 +67,44 @@ def main(argv: Optional[list[str]] = None) -> int:
     elif args.command == "analyze-vacancy":
         text = _read_text_argument(args.text, args.file)
         result = orchestrator.review_vacancy(text)
+    elif args.command == "chat":
+        if args.pdf:
+            for pdf in args.pdf:
+                path = Path(pdf)
+                if not path.exists():
+                    raise FileNotFoundError(f"Файл {pdf} не найден")
+                doc = orchestrator.attach_pdf(path)
+                print(f"Прикреплён {doc.name}")
+        if args.message:
+            result = orchestrator.chat(args.message)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        print("Запущен чат. Используй /attach <путь к pdf> для добавления документов и 'exit' для выхода.")
+        while True:
+            try:
+                user_input = input("Вы: ").strip()
+            except EOFError:
+                print()
+                break
+            if not user_input:
+                continue
+            if user_input.lower() in {"exit", "quit", "выход"}:
+                break
+            if user_input.startswith("/attach"):
+                parts = user_input.split(maxsplit=1)
+                if len(parts) < 2:
+                    print("Укажи путь к файлу после /attach")
+                    continue
+                path = Path(parts[1])
+                if not path.exists():
+                    print(f"Файл {path} не найден")
+                    continue
+                doc = orchestrator.attach_pdf(path)
+                print(f"Добавлен {doc.name}")
+                continue
+            reply = orchestrator.chat(user_input)
+            print(f"Ассистент: {reply['answer']}")
+        return 0
     else:
         parser.error("Неизвестная команда")
         return 1

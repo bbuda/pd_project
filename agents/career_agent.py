@@ -4,6 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List
 
+from tools.base import Tool
+from tools.career_tools import CareerTools
+
 
 @dataclass
 class TemplateResult:
@@ -104,10 +107,16 @@ class CareerAgent:
         "компенсация обучения",
     ]
 
+    def __init__(self) -> None:
+        self._toolset = CareerTools()
+
     def provide_templates(self, group: str | None = None) -> List[TemplateResult]:
         if group:
             return [self._build_result(group)]
         return [self._build_result(name) for name in self._PROJECT_GROUPS]
+
+    def tools(self) -> List[Tool]:
+        return self._toolset.tools()
 
     def analyze_document(self, text: str, doc_type: str) -> Dict[str, List[str]]:
         normalized = text.lower()

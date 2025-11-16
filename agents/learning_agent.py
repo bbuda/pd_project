@@ -4,6 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List
 
+from tools.base import Tool
+from tools.learning_tools import LearningTools
+
 
 @dataclass
 class RoadmapRequest:
@@ -76,6 +79,12 @@ class LearningAgent:
         "Github для open-source активности",
         "Job trackers (Airtable, Notion) для контроля откликов",
     ]
+
+    def __init__(self) -> None:
+        self._toolset = LearningTools()
+
+    def tools(self) -> List[Tool]:
+        return self._toolset.tools()
 
     def build_roadmap(self, request: RoadmapRequest) -> Dict[str, object]:
         direction = request.direction.lower().strip()
